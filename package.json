@@ -1,0 +1,11 @@
+{
+  "name": "vmwinsloware",
+  "version": "1.0.0",
+  "description": "A dumb VM for UBC CPSC 121's prelab 8 assignment in JavaScript",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Winslow S.E.M.",
+  "license": "MIT"
+}
