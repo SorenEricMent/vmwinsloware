@@ -23,6 +23,7 @@ ins.full();
 
 function CPU(debug, mem, reg){
     console.log("VMWinslowARE 1.0.0, emulator created.");
+    this.clock_counter = 0;
     this.debug = debug; // When true, output all registers/internal status for all clock cycles.
     this.memory = mem;
     this.reg = reg;
@@ -45,7 +46,6 @@ function CPU(debug, mem, reg){
     this.bch = 0x0;
     this.alua = 0x0;
     this.alub = 0x0;
-    this.pointer = -1;
 
     this.regr = function(offset){
         if(offset == 0xF){
@@ -67,11 +67,12 @@ function CPU(debug, mem, reg){
         if(this.halt){
             console.log("CPU Halted");
         }else{
-            this.pointer++;
+            this.clock_counter++;
+            console.log("Running clock cycle #" + this.clock_counter);
             //Update PC;
             this.PC = this.nextPC;
             //Fetch & Decode instruction
-            icd_ifn = mem[this.pointer];
+            icd_ifn = mem[this.PC];
             this.icd = d1(icd_ifn);
             this.ifn = d2(icd_ifn);
             this.valc = 0x0;
@@ -80,18 +81,17 @@ function CPU(debug, mem, reg){
             if(icd_ifn == "00"){
                 this.halt = true;
             }
+            read_rab = 0;
             if(this.icd == "3" || this.icd == "6"){
-                this.pointer++;
-                this.ra = d1(mem[this.pointer]);
-                this.rb = d2(mem[this.pointer]);
+                this.ra = d1(mem[this.PC+1]);
+                this.rb = d2(mem[this.PC+1]);
+                read_rab = 1;
             }
             if(this.icd == "3" || this.icd == "7"){
-                this.pointer++;
-                this.valc = mem[this.pointer] + 
-                            mem[this.pointer+1] +
-                            mem[this.pointer+2] + 
-                            mem[this.pointer+3];
-                this.pointer+=3;
+                this.valc = parseInt(mem[this.PC+1+read_rab] + 
+                            mem[this.PC+2+read_rab] +
+                            mem[this.PC+3+read_rab] + 
+                            mem[this.PC+4+read_rab], 16);
             }
             switch(this.icd){
                 case "0":
@@ -137,13 +137,28 @@ function CPU(debug, mem, reg){
                     this.alub = this.valb;
                     break;
             }
-            
-            //EXECUTION
-            if(this.icd == "3" || this.ifn == "0"){ // Move value to register
-                this.vale = this.valc;
+            //BRANCH
+            if(this.icd != "7"){
+                this.bch = 0;
+            }else{
+                switch(this.ifn){
+                    case "0": 
+                        this.bch = 1;
+                        break;
+                    case "1": 
+                        if(this.vale<=0){
+                            this.bch=1;
+                        }else{
+                            this.bch=0;
+                        }
+                        break;
+                    case "2": 
+                        this.bch = 0
+                        break;
+                }
             }
             //ALU INST
-            if(this.icd != "6" && (this.ifn == "0"|| this.ifn == "1"|| this.ifn == "2")){
+            if(this.icd != "6"){
                 this.vale = this.alub + this.alua; // ALU DEFAULT BEHAVIOUR(ADD)
             }
             if(this.icd == "6"){
@@ -159,27 +174,10 @@ function CPU(debug, mem, reg){
                         break;
                 }
             }
-            //BRANCH
-            if(this.icd != "7" && (this.ifn == "0"|| this.ifn == "1"|| this.ifn == "2")){
-                this.bch = 0;
+            if(this.icd == "3" && this.ifn == "0"){ // Move value to register
+                this.vale = this.valc;
             }
-            if(this.icd == "7"){
-                switch(this.ifn){
-                    case "0": 
-                        this.bch = 0;
-                        break;
-                    case "1": 
-                        if(this.vale<=0){
-                            this.bch=1;
-                        }else{
-                            this.bch=0;
-                        }
-                        break;
-                    case "2": 
-                        this.bch = 0
-                        break;
-                }
-            }
+
             if(this.icd == 7 && this.bch == 1){
                 if(this.debug){
                     console.log("Jump triggered!");
@@ -190,6 +188,7 @@ function CPU(debug, mem, reg){
             }
             
             this.regw(this.dste, this.vale);
+
             //Output all internals
             if(this.debug){
                 console.log(
@@ -209,8 +208,7 @@ function CPU(debug, mem, reg){
                         vala :  toHex(this.vala),
                         valb :  toHex(this.valb),
                         vale :  toHex(this.vale),
-                        bch :  toHex(this.bch),
-                        pointer : this.pointer
+                        bch :  toHex(this.bch)
                     }
                 );
             }
@@ -230,8 +228,7 @@ function CPU(debug, mem, reg){
                 vala :  toHex(this.vala),
                 valb :  toHex(this.valb),
                 vale :  toHex(this.vale),
-                bch :  toHex(this.bch),
-                pointer : this.pointer
+                bch :  toHex(this.bch)
             };
         }
     }
