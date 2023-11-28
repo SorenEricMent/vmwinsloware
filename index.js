@@ -2,11 +2,11 @@ const init_memory =
     ["30", "F2", "00", "00", "00", "01",
      "30", "F1", "00", "00", "00", "05",
      "30", "F0", "00", "00", "00", "00",
-     "62", "11",
-     "71", "00", "00", "00", "22",
-     "60", "10",
-     "61", "21", 
-     "70", "00", "00", "00", "12",
+     "62", "11",    // 62 11 00 00 00 00
+     "71", "00", "00", "00", "22", // 71 00 00 00 00 22
+     "60", "10", // 60 10 00 00 00 00
+     "61", "21", // 61 21 00 00 00 00
+     "70", "00", "00", "00", "12", // 70 00 00 00 00 00
      "00"];
 //  Value provided for 2023winter
 //  I see literally no point in the complexity of this prelab but okay
@@ -47,6 +47,7 @@ function CPU(debug, mem, reg){
     this.PC = 0x0;
     this.nextPC = 0x0;
     this.halt = false;
+    this.comm_friendly = "";
 
     this.icd = 0x0;
     this.ifn = 0x0;
@@ -85,7 +86,6 @@ function CPU(debug, mem, reg){
             console.log("CPU Halted");
         }else{
             this.clock_counter++;
-            console.log("\x1b[35mRunning clock cycle \x1b[36m#" + this.clock_counter + "\x1b[0m");
             //Update PC;
             this.PC = this.nextPC;
             //Fetch & Decode instruction
@@ -161,12 +161,15 @@ function CPU(debug, mem, reg){
                 switch(this.ifn){
                     case "0": 
                         this.bch = 1;
+                        this.comm_friendly = "<JMP_UNCOND>";
                         break;
                     case "1": 
                         if(this.vale<=0){
                             this.bch=1;
+                            this.comm_friendly = "<JMP_COND> [SATISIFIED]";
                         }else{
                             this.bch=0;
+                            this.comm_friendly = "<JMP_COND> [UNSATISIFIED]";
                         }
                         break;
                     case "2": 
@@ -182,17 +185,21 @@ function CPU(debug, mem, reg){
                 switch(this.ifn){
                     case "0": // ADD
                         this.vale = this.alub + this.alua;
+                        this.comm_friendly = "<ALU_ADD>";
                         break;
                     case "1": // SUBSTRACT
                         this.vale = this.alub - this.alua;
+                        this.comm_friendly = "<ALU_SUB>";
                         break;
                     case "2": //Bitwise AND
                         this.vale = this.alub & this.alua;
+                        this.comm_friendly = "<ALU_AND>";
                         break;
                 }
             }
             if(this.icd == "3" && this.ifn == "0"){ // Move value to register
                 this.vale = this.valc;
+                this.comm_friendly = "<MOVREG>";
             }
 
             if(this.icd == 7 && this.bch == 1){
@@ -205,7 +212,7 @@ function CPU(debug, mem, reg){
             }
             
             this.regw(this.dste, this.vale);
-
+            console.log("\x1b[35mRunning clock cycle \x1b[36m#" + this.clock_counter + " \x1b[34m" + this.comm_friendly + "\x1b[0m");
             //Output all internals
             if(this.debug){
                 console.log(
