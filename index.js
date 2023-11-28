@@ -13,16 +13,33 @@ const init_memory =
 const init_register = 
     [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
 
-var ins = new CPU(true, init_memory, init_register);
+var ins = new CPU(false, init_memory, init_register);
 
-ins.full();
+const formatProperty = (propertyName) => `\x1b[33m${propertyName}\x1b[0m`;
+const formatValue = (value) => `\x1b[32m${value}\x1b[0m`;
 
+var emulation_time = 0;
+while(!ins.halt)
+{
+    data = ins.step();
+    let formattedOutput = '';
+
+    for (const key in data) {
+        if (Object.hasOwnProperty.call(data, key)) {
+            formattedOutput += `${formatProperty(key)}: ${formatValue(data[key])}, `;
+        }
+    }
+    formattedOutput = formattedOutput.slice(0, -2); // Remove the trailing comma and space
+    console.log(formattedOutput);
+}
+emulation_time = performance.now();
+console.log("\x1b[100mEmulation finished after: \x1b[32m" + emulation_time + "ns\x1b[37m\x1b[100m. Average clockspeed \x1b[32m" + ins.clock_counter / emulation_time + "GHz\x1b[37m\x1b[100m.\x1b[0m");
 //  CPU.halt: Boolean
 //  CPU.step() for one clock cycle;
 //  CPU.full() for cycling until halt (INST 0x00)
 
 function CPU(debug, mem, reg){
-    console.log("VMWinslowARE 1.0.0, emulator created.");
+    console.log("\x1b[31mVMWinslowARE 1.0.0, emulator created.\x1b[0m");
     this.clock_counter = 0;
     this.debug = debug; // When true, output all registers/internal status for all clock cycles.
     this.memory = mem;
@@ -68,7 +85,7 @@ function CPU(debug, mem, reg){
             console.log("CPU Halted");
         }else{
             this.clock_counter++;
-            console.log("Running clock cycle #" + this.clock_counter);
+            console.log("\x1b[35mRunning clock cycle \x1b[36m#" + this.clock_counter + "\x1b[0m");
             //Update PC;
             this.PC = this.nextPC;
             //Fetch & Decode instruction
@@ -208,6 +225,8 @@ function CPU(debug, mem, reg){
                         vala :  toHex(this.vala),
                         valb :  toHex(this.valb),
                         vale :  toHex(this.vale),
+                        alua :  toHex(this.alua),
+                        alub :  toHex(this.alub),
                         bch :  toHex(this.bch)
                     }
                 );
@@ -228,6 +247,8 @@ function CPU(debug, mem, reg){
                 vala :  toHex(this.vala),
                 valb :  toHex(this.valb),
                 vale :  toHex(this.vale),
+                alua :  toHex(this.alua),
+                alub :  toHex(this.alub),
                 bch :  toHex(this.bch)
             };
         }
